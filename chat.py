@@ -1,10 +1,16 @@
-import streamlit as st
+import openai
+import chatgpt
 import snowflake.connector
+import streamlit as st
+
+openai.api_key = "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"
+
+
 
 def run_query(query):
     # Connect to Snowflake
     cnx = snowflake.connector.connect(
-        user='JanukaPe',
+        user='JanukaPE',
         password='Lavern1990!',
         account='sh69458.ca-central-1.aws'
     )
@@ -36,8 +42,7 @@ def chatbot_response(input):
 
 st.title("Chatbot")
 
-input = st.text_input("Enter your message:")
-
-if input:
-    response = chatbot_response(input)
-    st.write(response)
+message = st.text_input("Enter your message:")
+if message:
+    response = chatbot_response(message)
+    st.success(response)
