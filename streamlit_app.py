@@ -63,14 +63,8 @@ if selected_table:
 
     cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
     data = cursor.fetchall()
+    df = pd.DataFrame(data, columns=[desc[0] for desc in cursor.description])
 
-    st.write(f"Columns: {', '.join([x[0] for x in cursor.description])}")
+    st.write(f"Columns: {', '.join(df.columns)}")
     st.write("Data Preview:")
-    st.write(buildTable(data))
-
-    # retrieve the data for the selected table
-    query = f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table}"
-    df = pd.read_sql_query(query, conn)
-
-    # display an editable dataframe for the selected table
-    st.experimental_data_editor(df)
+    st.write(df)
