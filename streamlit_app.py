@@ -16,7 +16,7 @@ conn = snowflake.connector.connect(
 # Retrieve list of virtual warehouses, databases, and schemas
 cursor = conn.cursor()
 cursor.execute("SHOW WAREHOUSES")
-warehouses = [row[1] for row in cursor.fetchall()]
+warehouses = [row[0] for row in cursor.fetchall()]
 
 cursor.execute("SHOW DATABASES")
 databases = [row[1] for row in cursor.fetchall()]
