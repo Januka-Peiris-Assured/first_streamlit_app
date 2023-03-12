@@ -54,6 +54,5 @@ if selected_table:
     cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
     headers, rows = buildTable(cursor)
 
-    st.write(f"Columns: {', '.join(headers)}")
     st.write("Data Preview:")
     st.dataframe(rows, columns=headers)
