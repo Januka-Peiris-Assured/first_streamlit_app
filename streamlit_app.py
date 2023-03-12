@@ -1,21 +1,11 @@
 import snowflake.connector
 import streamlit as st
-import pandas as pd
 
 # Define the buildTable function
 def buildTable(data):
     headers = [x[0] for x in data.description]
-    table = "<table><thead><tr>"
-    for header in headers:
-        table += f"<th>{header}</th>"
-    table += "</tr></thead><tbody>"
-    for row in data:
-        table += "<tr>"
-        for value in row:
-            table += f"<td><input type='text' value='{value}'></td>"
-        table += "</tr>"
-    table += "</tbody></table>"
-    return table
+    rows = [list(row) for row in data.fetchall()]
+    return headers, rows
 
 # Get Snowflake account details from user input
 account = st.text_input("Snowflake Account Name")
@@ -62,9 +52,8 @@ selected_table = st.selectbox("Table Name", tables)
 if selected_table:
 
     cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
-    data = cursor.fetchall()
-    df = st.DataFrame(data, columns=[desc[0] for desc in cursor.description])
+    headers, rows = buildTable(cursor)
 
-    st.write(f"Columns: {', '.join(df.columns)}")
+    st.write(f"Columns: {', '.join(headers)}")
     st.write("Data Preview:")
-    st.write(df)
+    st.dataframe(rows, columns=headers)
