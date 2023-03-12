@@ -60,7 +60,7 @@ selected_table = st.selectbox("Table Name", tables)
 # Retrieve table columns and preview data
 if selected_table:
 
-    cursor.execute(f"SELECT * FROM {selected_table} LIMIT 10")
+    cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
     data = cursor.fetchall()
 
     st.write(f"Columns: {', '.join(columns)}")
