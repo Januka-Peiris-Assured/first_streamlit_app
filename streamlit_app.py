@@ -1,23 +1,50 @@
 import snowflake.connector
 import streamlit as st
-import pandas as pd
+from streamlit.hashing import _CodeHasher
+
+# Define a unique key for the session state to avoid hash conflicts
+def get_session_state_id() -> str:
+    current_module = _CodeHasher.get_module()
+    current_function = _CodeHasher.get_function()
+
+    return f"{current_module}.{current_function}.session_state"
+
+# Define a SessionState class to preserve state across Streamlit runs
+class SessionState:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+# Get session state
+session_state = SessionState(logged_in=False)
 
 # Create sidebar
 with st.sidebar:
     st.write("### Login Details")
-    account = st.text_input("Snowflake Account Name")
-    user = st.text_input("User Name")
-    password = st.text_input("Password", type="password")
+    if session_state.logged_in:
+        account = st.text_input("Snowflake Account Name", session_state.account)
+        user = st.text_input("User Name", session_state.user)
+        password = st.text_input("Password", type="password", value=session_state.password)
+    else:
+        account = st.text_input("Snowflake Account Name")
+        user = st.text_input("User Name")
+        password = st.text_input("Password", type="password")
+    
+    if st.sidebar.button("Login"):
+        conn = snowflake.connector.connect(
+            account=account,
+            user=user,
+            password=password
+        )
+        session_state.logged_in = True
+        session_state.account = account
+        session_state.user = user
+        session_state.password = password
 
-# Connect to Snowflake
-if st.sidebar.button("Login"):
-    conn = snowflake.connector.connect(
-        account=account,
-        user=user,
-        password=password
-    )
-
-    # Retrieve list of virtual warehouses, databases, and schemas
+# If not logged in, show a message and stop the script execution
+if not session_state.logged_in:
+    st.write("Please enter Snowflake login details on the sidebar")
+else:
+    # Connect to Snowflake
     cursor = conn.cursor()
     cursor.execute("SHOW WAREHOUSES")
     warehouses = [row[0] for row in cursor.fetchall()]
