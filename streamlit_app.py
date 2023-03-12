@@ -1,59 +1,45 @@
 import snowflake.connector
 import streamlit as st
 
-# Snowflake login credentials
-account = st.secrets["account"]
-username = st.secrets["username"]
-password = st.secrets["password"]
+# Get Snowflake account details from user input
+account = st.text_input("Snowflake Account Name")
+user = st.text_input("User Name")
+password = st.text_input("Password", type="password")
 
-# Create a connection object
+# Connect to Snowflake
 conn = snowflake.connector.connect(
     account=account,
-    user=username,
-    password=password,
+    user=user,
+    password=password
 )
 
-# Get a cursor object
-cur = conn.cursor()
+# Retrieve list of virtual warehouses, databases, and schemas
+cursor = conn.cursor()
+cursor.execute("SHOW WAREHOUSES")
+warehouses = [row[1] for row in cursor.fetchall()]
 
-# Get virtual warehouses
-cur.execute("SHOW WAREHOUSES")
-warehouse_names = [row[1] for row in cur.fetchall()]
+cursor.execute("SHOW DATABASES")
+databases = [row[1] for row in cursor.fetchall()]
 
-# Get databases
-cur.execute("SHOW DATABASES")
-database_names = [row[1] for row in cur.fetchall()]
+cursor.execute("SHOW SCHEMAS")
+schemas = [row[1] for row in cursor.fetchall()]
 
-# Get schemas
-cur.execute("SHOW SCHEMAS")
-schema_names = [row[2] for row in cur.fetchall()]
+# Display options for virtual warehouse, database, schema, and table
+selected_warehouse = st.selectbox("Virtual Warehouse", warehouses)
+selected_database = st.selectbox("Database", databases)
+selected_schema = st.selectbox("Schema", schemas)
+cursor.execute(f"SHOW TABLES IN {selected_database}.{selected_schema}")
+tables = [row[2] for row in cursor.fetchall()]
+selected_table = st.selectbox("Table Name", tables)
 
-# Get tables
-cur.execute("SHOW TABLES")
-table_names = [row[2] for row in cur.fetchall()]
+# Retrieve table columns and preview data
+if selected_table:
+    cursor.execute(f"DESCRIBE TABLE {selected_table}")
+    columns = [row[0] for row in cursor.fetchall()]
 
-# Close the cursor and connection
-cur.close()
-conn.close()
+    cursor.execute(f"SELECT * FROM {selected_table} LIMIT 10")
+    data = cursor.fetchall()
 
-# Display the snowflake details
-st.write(f"Snowflake Account: {account}")
-st.write(f"Username: {username}")
-
-# Display the virtual warehouses dropdown
-selected_warehouse = st.selectbox("Select virtual warehouse:", warehouse_names)
-
-# Display the databases dropdown
-selected_database = st.selectbox("Select database name:", database_names)
-
-# Display the schemas dropdown
-selected_schema = st.selectbox("Select schema name:", schema_names)
-
-# Display the tables dropdown
-selected_table = st.selectbox("Select table name:", table_names)
-
-# Show the selected warehouse, database, schema, and table
-st.write(f"Selected virtual warehouse: {selected_warehouse}")
-st.write(f"Selected database: {selected_database}")
-st.write(f"Selected schema: {selected_schema}")
-st.write(f"Selected table: {selected_table}")
+    st.write(f"Columns: {', '.join(columns)}")
+    st.write("Data Preview:")
+    st.write(data)
