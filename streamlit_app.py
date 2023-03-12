@@ -59,8 +59,6 @@ selected_table = st.selectbox("Table Name", tables)
 
 # Retrieve table columns and preview data
 if selected_table:
-    cursor.execute(f"DESCRIBE TABLE {selected_database}.{selected_schema}.{selected_table}")
-    columns = [row[0] for row in cursor.fetchall()]
 
     cursor.execute(f"SELECT * FROM {selected_table} LIMIT 10")
     data = cursor.fetchall()
