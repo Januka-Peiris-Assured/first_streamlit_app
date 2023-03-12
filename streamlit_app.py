@@ -1,5 +1,6 @@
 import snowflake.connector
 import streamlit as st
+import pandas as pd
 
 # Define the buildTable function
 def buildTable(data):
@@ -59,12 +60,17 @@ selected_table = st.selectbox("Table Name", tables)
 
 # Retrieve table columns and preview data
 if selected_table:
-    cursor.execute(f"DESCRIBE TABLE {selected_database}.{selected_schema}.{selected_table}")
-    columns = [row[0] for row in cursor.fetchall()]
 
     cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
     data = cursor.fetchall()
 
-    st.write(f"Columns: {', '.join(columns)}")
+    st.write(f"Columns: {', '.join([x[0] for x in cursor.description])}")
     st.write("Data Preview:")
     st.write(buildTable(data))
+
+    # retrieve the data for the selected table
+    query = f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table}"
+    df = pd.read_sql_query(query, conn)
+
+    # display an editable dataframe for the selected table
+    st.experimental_data_editor(df)
