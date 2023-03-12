@@ -39,12 +39,13 @@ if st.button("Login"):
     cursor.execute("SHOW DATABASES")
     databases = [row[1] for row in cursor.fetchall()]
 
-    cursor.execute("SHOW SCHEMAS")
-    schemas = [row[1] for row in cursor.fetchall()]
-
     # Display options for virtual warehouse, database, schema, and table
     selected_database = st.selectbox("Database", databases)
+
+    cursor.execute(f"SHOW SCHEMAS IN {selected_database}")
+    schemas = [row[1] for row in cursor.fetchall()]
     selected_schema = st.selectbox("Schema", schemas)
+
     cursor.execute(f"SHOW TABLES IN {selected_database}.{selected_schema}")
     tables = [row[1] for row in cursor.fetchall()]
     selected_table = st.selectbox("Table Name", tables)
@@ -77,10 +78,7 @@ if st.button("Login"):
             for i, row in edited_df.iterrows():
                 original_row = original_df.iloc[i]
                 if not row.equals(original_row):
-                    set_values = ", ".join([f"{col} = '{row[col]}'" for col in row.index])
-                    where_clause = " AND ".join([f"{col} = '{original_row[col]}'" for col in row.index])
-                    update_query = f"UPDATE {selected_database}.{selected_schema}.{selected_table} SET {set_values} WHERE {where_clause}"
-                    cursor.execute(update_query)
+
 
             # Add new rows
             new_rows = edited_df.loc[edited_df["_st_state"].isin(["new", "new_row"]), :]
