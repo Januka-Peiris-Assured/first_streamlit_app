@@ -10,7 +10,7 @@ with st.sidebar:
     password = st.text_input("Password", type="password")
 
 # Connect to Snowflake
-if st.button("Login"):
+if st.sidebar.button("Login"):
     conn = snowflake.connector.connect(
         account=account,
         user=user,
