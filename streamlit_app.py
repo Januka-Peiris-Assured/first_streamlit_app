@@ -1,3 +1,4 @@
+import streamlit as st
 import snowflake.connector as sf
 
 def connect_to_snowflake():
@@ -11,9 +12,6 @@ def connect_to_snowflake():
     )
 
     return conn.cursor()
-
-
-import streamlit as st
 
 def main():
     st.sidebar.title("Snowflake Admin Tool")
