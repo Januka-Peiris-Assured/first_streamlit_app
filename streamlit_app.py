@@ -39,11 +39,14 @@ if st.button("Login"):
     cursor.execute("SHOW DATABASES")
     databases = [row[1] for row in cursor.fetchall()]
 
-    cursor.execute("SHOW SCHEMAS")
-    schemas = [row[1] for row in cursor.fetchall()]
-
     # Display options for virtual warehouse, database, schema, and table
     selected_database = st.selectbox("Database", databases)
+    if selected_database:
+        cursor.execute("SHOW SCHEMAS")
+        schemas = [row[1] for row in cursor.fetchall()]
+    else:
+        schemas = []
+
     selected_schema = st.selectbox("Schema", schemas)
     cursor.execute(f"SHOW TABLES IN {selected_database}.{selected_schema}")
     tables = [row[1] for row in cursor.fetchall()]
