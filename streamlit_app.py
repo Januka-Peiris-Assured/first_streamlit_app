@@ -80,3 +80,7 @@ if st.button("Load Table"):
             # Add new rows
             new_rows = edited_df.loc[edited_df["_st_state"].isin(["new", "new_row"]), :]
             if not new_rows.empty:
+                new_rows.drop(columns=["_st_state"], inplace=True)
+                new_rows.to_sql(name=selected_table, con=conn, schema=selected_schema, index=False, if_exists="append")
+
+            st.write("Changes saved!")
