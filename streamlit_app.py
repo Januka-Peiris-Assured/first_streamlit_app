@@ -1,59 +1,32 @@
-import snowflake.connector
 import streamlit as st
+import psycopg2
+import pandas as pd
 
-# Define the buildTable function
-def buildTable(data):
-    headers = [x[0] for x in data.description]
-    rows = [list(row) for row in data.fetchall()]
-    return headers, rows
-
-# Get Snowflake account details from user input
-account = st.text_input("Snowflake Account Name")
-user = st.text_input("User Name")
-password = st.text_input("Password", type="password")
-
-# Connect to Snowflake
-conn = snowflake.connector.connect(
-    account=account,
-    user=user,
-    password=password
+# Database connection
+conn = psycopg2.connect(
+    host="localhost",
+    database="mydatabase",
+    user="myuser",
+    password="mypassword"
 )
 
-# Retrieve list of virtual warehouses, databases, and schemas
-cursor = conn.cursor()
-cursor.execute("SHOW WAREHOUSES")
-warehouses = [row[0] for row in cursor.fetchall()]
+# Function to fetch data from database
+def fetchData(query):
+    with conn.cursor() as cur:
+        cur.execute(query)
+        rows = cur.fetchall()
+        return rows
 
-# Select Snowflake role
-cursor.execute("SELECT CURRENT_ROLE()")
-current_role = cursor.fetchone()[0]
-cursor.execute("SHOW ROLES")
-roles = [row[1] for row in cursor.fetchall()]
+# Build Streamlit dataframe
+def buildTable(data):
+    headers = [x[0] for x in data.description]
+    rows = [list(row) for row in data]
+    return pd.DataFrame(rows, columns=headers)
 
-selected_warehouse = st.selectbox("Virtual Warehouse", warehouses)
-selected_role = st.selectbox("Role", roles, index=roles.index(current_role))
+# Query data from database
+query = "SELECT * FROM mytable"
+data = fetchData(query)
 
-cursor.execute("USE ROLE {}".format(selected_role))
-
-cursor.execute("SHOW DATABASES")
-databases = [row[1] for row in cursor.fetchall()]
-
-cursor.execute("SHOW SCHEMAS")
-schemas = [row[1] for row in cursor.fetchall()]
-
-# Display options for virtual warehouse, database, schema, and table
-selected_database = st.selectbox("Database", databases)
-selected_schema = st.selectbox("Schema", schemas)
-cursor.execute(f"SHOW TABLES IN {selected_database}.{selected_schema}")
-tables = [row[1] for row in cursor.fetchall()]
-selected_table = st.selectbox("Table Name", tables)
-
-# Retrieve table columns and preview data
-if selected_table:
-
-    cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
-    headers, rows = buildTable(cursor)
-
-    st.write(f"Columns: {', '.join(headers)}")
-    st.write("Data Preview:")
-    st.dataframe(rows, columns=headers)
+# Build Streamlit dataframe and display
+df = buildTable(data)
+st.dataframe(df)
