@@ -44,8 +44,8 @@ if st.button("Login"):
 
     cursor.execute(f"SHOW SCHEMAS IN {selected_database}")
     schemas = [row[1] for row in cursor.fetchall()]
-    selected_schema = st.selectbox("Schema", schemas)
 
+    selected_schema = st.selectbox("Schema", schemas)
     cursor.execute(f"SHOW TABLES IN {selected_database}.{selected_schema}")
     tables = [row[1] for row in cursor.fetchall()]
     selected_table = st.selectbox("Table Name", tables)
@@ -78,10 +78,6 @@ if st.button("Login"):
             for i, row in edited_df.iterrows():
                 original_row = original_df.iloc[i]
                 if not row.equals(original_row):
-            # Add new rows
-            new_rows = edited_df.loc[edited_df["_st_state"].isin(["new", "new_row"]), :]
-            if not new_rows.empty:
-                new_rows.drop(columns=["_st_state"], inplace=True)
-                new_rows.to_sql(name=selected_table, con=conn, schema=selected_schema, index=False, if_exists="append")
-
-            st.write("Changes saved!")
+                    set_values = ", ".join([f"{col} = '{row[col]}'" for col in row.index])
+                    where_clause = " AND ".join([f"{col} = '{original_row[col]}'" for col in row.index])
+                    update_query = f"UPDATE {selected_database}.{selected_schema}.{selected_table} SET
