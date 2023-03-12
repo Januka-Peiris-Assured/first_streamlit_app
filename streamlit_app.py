@@ -57,4 +57,6 @@ if selected_table:
     st.write("Data Preview:")
     st.dataframe(df)
 
+    
+    st.write("Edit table")
     edited_df = st.experimental_data_editor(df) # 👈 An editable dataframe
