@@ -1,17 +1,56 @@
+import snowflake.connector as sf
+
+def connect_to_snowflake():
+    conn = sf.connect(
+        user='<your_user>',
+        password='<your_password>',
+        account='<your_account>',
+        warehouse='<your_warehouse>',
+        database='<your_database>',
+        schema='<your_schema>'
+    )
+
+    return conn.cursor()
+
+
 import streamlit as st
-import yaml
 
 def main():
-    st.set_page_config(page_title="YAML Parser", page_icon=":guardsman:", layout="wide")
-    st.title("YAML Parser")
+    st.sidebar.title("Snowflake Admin Tool")
+    options = ['Tables', 'Users', 'Roles', 'Warehouses']
+    choice = st.sidebar.selectbox("Select an option", options)
 
-    uploaded_file = st.file_uploader("Upload your YAML file", type=["yml", "yaml"])
+    if choice == 'Tables':
+        cursor = connect_to_snowflake()
+        cursor.execute('SELECT * FROM information_schema.tables')
+        tables = cursor.fetchall()
+        st.write('### Tables in Snowflake:')
+        for table in tables:
+            st.write('- ' + table.table_name)
 
-    if uploaded_file:
-        with open(uploaded_file) as file:
-            yaml_data = yaml.safe_load(file)
-            st.write("Here is the contents of your YAML file:")
-            st.json(yaml_data)
+    elif choice == 'Users':
+        cursor = connect_to_snowflake()
+        cursor.execute('SHOW USERS')
+        users = cursor.fetchall()
+        st.write('### Users in Snowflake:')
+        for user in users:
+            st.write('- ' + user[0])
+
+    elif choice == 'Roles':
+        cursor = connect_to_snowflake()
+        cursor.execute('SHOW ROLES')
+        roles = cursor.fetchall()
+        st.write('### Roles in Snowflake:')
+        for role in roles:
+            st.write('- ' + role[0])
+
+    elif choice == 'Warehouses':
+        cursor = connect_to_snowflake()
+        cursor.execute('SHOW WAREHOUSES')
+        warehouses = cursor.fetchall()
+        st.write('### Warehouses in Snowflake:')
+        for warehouse in warehouses:
+            st.write('- ' + warehouse[0])
 
 if __name__ == '__main__':
     main()
