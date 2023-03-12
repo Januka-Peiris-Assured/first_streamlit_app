@@ -44,15 +44,19 @@ tables = [row[1] for row in cursor.fetchall()]
 selected_table = st.selectbox("Table Name", tables)
 
 # Retrieve table columns and preview data
-if selected_table:
+def load_data():
     cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
     data = cursor.fetchall()
-    headers = [desc[0] for desc in cursor.description]
+    df = pd.DataFrame(data, columns=[desc[0] for desc in cursor.description])
+    return df
 
-    st.write(f"Columns: {', '.join(headers)}")
-    st.write("Data Preview:")
-    
-    # Put the data into a streamlit dataframe and display it
-    df = pd.DataFrame(data, columns=headers)
+if selected_table:
+
     df = load_data()
+    st.write(f"Columns: {', '.join(df.columns)}")
+    st.write("Data Preview:")
+    st.dataframe(df)
+
     edited_df = st.experimental_data_editor(df) # 👈 An editable dataframe
+    favorite_command = edited_df.loc[edited_df["rating"].idxmax()]["command"]
+    st.markdown(f"Your favorite command is **{favorite_command}** 🎈")
