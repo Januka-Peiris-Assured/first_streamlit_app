@@ -45,7 +45,7 @@ selected_table = st.selectbox("Table Name", tables)
 
 # Retrieve table columns and preview data
 def load_data():
-    cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table}")
+    cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
     data = cursor.fetchall()
     df = pd.DataFrame(data, columns=[desc[0] for desc in cursor.description])
     return df
@@ -55,16 +55,26 @@ if selected_table:
     df = load_data()
     st.write(f"Columns: {', '.join(df.columns)}")
     st.write("Data Preview:")
-    st.write(df)
-
+    st.dataframe(df)
+    
     st.write("Edit table")
-    edited_df = st.experimental_data_editor(df, num_rows="dynamic") # 👈 An editable dataframe with dynamic row adding/deleting
-
-    if st.button("Save changes"):
-        # Save changes to Snowflake table
-        cursor.execute(f"DELETE FROM {selected_database}.{selected_schema}.{selected_table}") # Delete existing data
-        for index, row in edited_df.iterrows():
-            cursor.execute(f"INSERT INTO {selected_database}.{selected_schema}.{selected_table} VALUES ({','.join([str(val) for val in row.values])})") # Insert new data
-
-        conn.commit() # Commit changes to database
-        st.write("Changes saved!") # Notify user
+    edited_df = st.experimental_data_editor(df, num_rows="dynamic") # Make table editable and add/delete rows
+    
+    if st.button("Save Changes"):
+        # Create a new table in Snowflake with the same schema as the original table
+        new_table_name = selected_table + "_new"
+        cursor.execute(f"CREATE TABLE {selected_database}.{selected_schema}.{new_table_name} LIKE {selected_database}.{selected_schema}.{selected_table}")
+        conn.commit()
+        
+        # Write the edited data to the new table
+        edited_df.to_sql(name=new_table_name, con=conn, schema=selected_schema, index=False, if_exists="append")
+        
+        # Drop the original table
+        cursor.execute(f"DROP TABLE {selected_database}.{selected_schema}.{selected_table}")
+        conn.commit()
+        
+        # Rename the new table to the original table name
+        cursor.execute(f"ALTER TABLE {selected_database}.{selected_schema}.{new_table_name} RENAME TO {selected_table}")
+        conn.commit()
+        
+        st.success("Changes saved successfully")
