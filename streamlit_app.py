@@ -78,8 +78,6 @@ if st.button("Login"):
             for i, row in edited_df.iterrows():
                 original_row = original_df.iloc[i]
                 if not row.equals(original_row):
-
-
             # Add new rows
             new_rows = edited_df.loc[edited_df["_st_state"].isin(["new", "new_row"]), :]
             if not new_rows.empty:
