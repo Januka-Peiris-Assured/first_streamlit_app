@@ -33,17 +33,17 @@ cursor.execute("USE ROLE {}".format(selected_role))
 cursor.execute("SHOW DATABASES")
 databases = [row[1] for row in cursor.fetchall()]
 
+cursor.execute("SHOW SCHEMAS")
+schemas = [row[1] for row in cursor.fetchall()]
+
+# Display options for virtual warehouse, database, schema, and table
 selected_database = st.selectbox("Database", databases)
+selected_schema = st.selectbox("Schema", schemas)
+cursor.execute(f"SHOW TABLES IN {selected_database}.{selected_schema}")
+tables = [row[1] for row in cursor.fetchall()]
+selected_table = st.selectbox("Table Name", tables)
 
-if selected_database:
-    cursor.execute(f"SHOW SCHEMAS IN {selected_database}")
-    schemas = [row[1] for row in cursor.fetchall()]
-
-    selected_schema = st.selectbox("Schema", schemas)
-    cursor.execute(f"SHOW TABLES IN {selected_database}.{selected_schema}")
-    tables = [row[1] for row in cursor.fetchall()]
-    selected_table = st.selectbox("Table Name", tables)
-
+if st.button("Load Table"):
     # Retrieve table columns and preview data
     def load_data():
         cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
@@ -52,9 +52,9 @@ if selected_database:
         return df
 
     if selected_table:
+        df = load_data()
         st.write(f"Columns: {', '.join(df.columns)}")
         st.write("Data Preview:")
-        df = load_data()
         st.dataframe(df)
 
         st.write("Edit table")
