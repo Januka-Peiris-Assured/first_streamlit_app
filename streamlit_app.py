@@ -1,6 +1,21 @@
 import snowflake.connector
 import streamlit as st
 
+# Define the buildTable function
+def buildTable(data):
+    headers = [x[0] for x in data.description]
+    table = "<table><thead><tr>"
+    for header in headers:
+        table += f"<th>{header}</th>"
+    table += "</tr></thead><tbody>"
+    for row in data:
+        table += "<tr>"
+        for value in row:
+            table += f"<td><input type='text' value='{value}'></td>"
+        table += "</tr>"
+    table += "</tbody></table>"
+    return table
+
 # Get Snowflake account details from user input
 account = st.text_input("Snowflake Account Name")
 user = st.text_input("User Name")
@@ -42,4 +57,4 @@ if selected_table:
 
     st.write(f"Columns: {', '.join(columns)}")
     st.write("Data Preview:")
-    st.write(data)
+    st.write(buildTable(data))
