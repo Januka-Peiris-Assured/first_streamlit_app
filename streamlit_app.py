@@ -29,7 +29,7 @@ selected_warehouse = st.selectbox("Virtual Warehouse", warehouses)
 selected_database = st.selectbox("Database", databases)
 selected_schema = st.selectbox("Schema", schemas)
 cursor.execute(f"SHOW TABLES IN {selected_database}.{selected_schema}")
-tables = [row[2] for row in cursor.fetchall()]
+tables = [row[1] for row in cursor.fetchall()]
 selected_table = st.selectbox("Table Name", tables)
 
 # Retrieve table columns and preview data
