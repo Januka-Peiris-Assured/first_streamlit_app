@@ -36,13 +36,22 @@ def main():
             st.success("Connected to Snowflake!")
 
             # Select role
-            st.write('## Role Management')
+            st.sidebar.header("Snowflake Roles")
             try:
-                cursor.execute("SHOW ROLES")
+                cursor.execute(
+                    'SELECT "name",  "owner", "comment" '
+                    'FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));'
+                )
                 roles = [row[0] for row in cursor.fetchall()]
-                role = st.selectbox("Select a role", roles)
+                role = st.sidebar.selectbox("Select a role", roles)
             except Exception as e:
                 st.error("Error fetching roles: " + str(e))
+                return
+
+            try:
+                cursor.execute(f"USE ROLE {role}")
+            except Exception as e:
+                st.error("Error selecting role: " + str(e))
                 return
 
             st.write(f"### Role selected: {role}")
