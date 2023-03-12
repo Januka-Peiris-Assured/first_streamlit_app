@@ -1,69 +1,59 @@
+import snowflake.connector
 import streamlit as st
-import sqlite3
 
-def create_connection():
-    conn = None
-    try:
-        conn = sqlite3.connect('test.db')
-        print(f'successful connection: {sqlite3.version}')
-    except sqlite3.Error as e:
-        print(e)
+# Define the buildTable function
+def buildTable(data):
+    headers = [x[0] for x in data.description]
+    rows = [list(row) for row in data.fetchall()]
+    return headers, rows
 
-    return conn
+# Get Snowflake account details from user input
+account = st.text_input("Snowflake Account Name")
+user = st.text_input("User Name")
+password = st.text_input("Password", type="password")
 
-def execute_query(conn, query):
-    cursor = conn.cursor()
-    try:
-        cursor.execute(query)
-        conn.commit()
-        print('Query executed successfully')
-    except sqlite3.Error as e:
-        print(f'Error executing query: {e}')
+# Connect to Snowflake
+conn = snowflake.connector.connect(
+    account=account,
+    user=user,
+    password=password
+)
 
-def create_table(conn):
-    create_table_query = '''
-        CREATE TABLE IF NOT EXISTS customers (
-            id INTEGER PRIMARY KEY,
-            first_name TEXT,
-            last_name TEXT,
-            email TEXT
-        );
-    '''
-    execute_query(conn, create_table_query)
+# Retrieve list of virtual warehouses, databases, and schemas
+cursor = conn.cursor()
+cursor.execute("SHOW WAREHOUSES")
+warehouses = [row[0] for row in cursor.fetchall()]
 
-def insert_data(conn):
-    insert_data_query = '''
-        INSERT INTO customers (first_name, last_name, email)
-        VALUES
-            ('John', 'Doe', 'john.doe@email.com'),
-            ('Jane', 'Doe', 'jane.doe@email.com')
-    '''
-    execute_query(conn, insert_data_query)
+# Select Snowflake role
+cursor.execute("SELECT CURRENT_ROLE()")
+current_role = cursor.fetchone()[0]
+cursor.execute("SHOW ROLES")
+roles = [row[1] for row in cursor.fetchall()]
 
-def select_all(conn):
-    select_all_query = '''
-        SELECT * FROM customers;
-    '''
-    cursor = conn.cursor()
-    cursor.execute(select_all_query)
-    rows = cursor.fetchall()
-    headers = [desc[0] for desc in cursor.description]
-    return rows, headers
+selected_warehouse = st.selectbox("Virtual Warehouse", warehouses)
+selected_role = st.selectbox("Role", roles, index=roles.index(current_role))
 
-def main():
-    st.title('Test SQLite Database')
+cursor.execute("USE ROLE {}".format(selected_role))
 
-    conn = create_connection()
-    if conn is not None:
-        create_table(conn)
-        insert_data(conn)
-        rows, headers = select_all(conn)
+cursor.execute("SHOW DATABASES")
+databases = [row[1] for row in cursor.fetchall()]
 
-        st.write('### Data in Streamlit DataFrame')
-        st.dataframe(rows, headers=headers)
-        
-    else:
-        st.write('Error creating database connection')
+cursor.execute("SHOW SCHEMAS")
+schemas = [row[1] for row in cursor.fetchall()]
 
-if __name__ == '__main__':
-    main()
+# Display options for virtual warehouse, database, schema, and table
+selected_database = st.selectbox("Database", databases)
+selected_schema = st.selectbox("Schema", schemas)
+cursor.execute(f"SHOW TABLES IN {selected_database}.{selected_schema}")
+tables = [row[1] for row in cursor.fetchall()]
+selected_table = st.selectbox("Table Name", tables)
+
+# Retrieve table columns and preview data
+if selected_table:
+
+    cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
+    headers, rows = buildTable(cursor)
+
+    st.write(f"Columns: {', '.join(headers)}")
+    st.write("Data Preview:")
+    st.dataframe(rows, columns=headers)
