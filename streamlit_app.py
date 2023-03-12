@@ -1,5 +1,6 @@
 import streamlit as st
 import snowflake.connector as sf
+import pandas as pd
 
 
 # Connect to Snowflake
@@ -39,19 +40,13 @@ def main():
             st.sidebar.header("Snowflake Roles")
             try:
                 cursor.execute(
-                    'SELECT "name",  "owner", "comment" '
-                    'FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));'
+                    'SHOW ROLES'
                 )
                 roles = [row[0] for row in cursor.fetchall()]
                 role = st.sidebar.selectbox("Select a role", roles)
+                cursor.execute(f'USE ROLE "{role}"')
             except Exception as e:
-                st.error("Error fetching roles: " + str(e))
-                return
-
-            try:
-                cursor.execute(f"USE ROLE {role}")
-            except Exception as e:
-                st.error("Error selecting role: " + str(e))
+                st.error("Error fetching or selecting role: " + str(e))
                 return
 
             st.write(f"### Role selected: {role}")
@@ -61,32 +56,18 @@ def main():
             try:
                 cursor.execute('SHOW USERS')
                 users = cursor.fetchall()
-                st.write('### Users in Snowflake:')
-                for user in users:
-                    st.write('- ' + user[0])
+                df_users = pd.DataFrame(users, columns=['User', 'Created On', 'Default Namespace'])
+                st.dataframe(df_users, use_container_width=True)
             except Exception as e:
                 st.error("Error fetching users: " + str(e))
-
-            # Database management
-            st.write('## Database Management')
-            try:
-                cursor.execute("SELECT name FROM INFORMATION_SCHEMA.DATABASES")
-                databases = [row[0] for row in cursor.fetchall()]
-                database = st.selectbox("Select a database", databases)
-            except Exception as e:
-                st.error("Error fetching databases: " + str(e))
-                return
-
-            st.write(f"### Database selected: {database}")
 
             # Warehouse management
             st.write('## Warehouse Management')
             try:
                 cursor.execute('SHOW WAREHOUSES')
                 warehouses = cursor.fetchall()
-                st.write('### Warehouses in Snowflake:')
-                for warehouse in warehouses:
-                    st.write('- ' + warehouse[0])
+                df_warehouses = pd.DataFrame(warehouses, columns=['Warehouse', 'State', 'Size', 'AutoSuspend', 'Created On', 'Retained For'])
+                st.dataframe(df_warehouses, use_container_width=True)
             except Exception as e:
                 st.error("Error fetching warehouses: " + str(e))
 
