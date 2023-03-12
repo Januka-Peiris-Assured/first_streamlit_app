@@ -28,7 +28,7 @@ schemas = [row[1] for row in cursor.fetchall()]
 selected_warehouse = st.selectbox("Virtual Warehouse", warehouses)
 selected_database = st.selectbox("Database", databases)
 selected_schema = st.selectbox("Schema", schemas)
-selected_table = st.text_input("Table Name")
+table_name = st.selectbox("Select table name:", table_names)
 
 # Retrieve table columns and preview data
 if selected_table:
