@@ -33,6 +33,17 @@ cursor = conn.cursor()
 cursor.execute("SHOW WAREHOUSES")
 warehouses = [row[0] for row in cursor.fetchall()]
 
+# Select Snowflake role
+cursor.execute("SELECT CURRENT_ROLE()")
+current_role = cursor.fetchone()[0]
+cursor.execute("SHOW ROLES")
+roles = [row[1] for row in cursor.fetchall()]
+
+selected_warehouse = st.selectbox("Virtual Warehouse", warehouses)
+selected_role = st.selectbox("Role", roles, index=roles.index(current_role))
+
+cursor.execute("USE ROLE {}".format(selected_role))
+
 cursor.execute("SHOW DATABASES")
 databases = [row[1] for row in cursor.fetchall()]
 
@@ -40,7 +51,6 @@ cursor.execute("SHOW SCHEMAS")
 schemas = [row[1] for row in cursor.fetchall()]
 
 # Display options for virtual warehouse, database, schema, and table
-selected_warehouse = st.selectbox("Virtual Warehouse", warehouses)
 selected_database = st.selectbox("Database", databases)
 selected_schema = st.selectbox("Schema", schemas)
 cursor.execute(f"SHOW TABLES IN {selected_database}.{selected_schema}")
