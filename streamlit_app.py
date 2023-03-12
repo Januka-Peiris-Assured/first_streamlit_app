@@ -1,3 +1,24 @@
+import streamlit as st
+import snowflake.connector as sf
+
+
+# Connect to Snowflake
+def connect_to_snowflake(user, password, account, warehouse):
+    try:
+        conn = sf.connect(
+            user=user,
+            password=password,
+            account=account,
+            warehouse=warehouse,
+        )
+        cursor = conn.cursor()
+        return cursor
+    except Exception as e:
+        st.error("Error connecting to Snowflake: " + str(e))
+        return None
+
+
+# Main function
 def main():
     st.sidebar.title("Snowflake Admin Tool")
 
@@ -15,63 +36,19 @@ def main():
             st.success("Connected to Snowflake!")
 
             # Select role
-            st.sidebar.header("Snowflake Roles")
+            st.write('## Role Management')
             try:
                 cursor.execute("SHOW ROLES")
                 roles = [row[0] for row in cursor.fetchall()]
-                role = st.sidebar.selectbox("Select a role", roles)
+                role = st.selectbox("Select a role", roles)
             except Exception as e:
                 st.error("Error fetching roles: " + str(e))
                 return
 
-            try:
-                cursor.execute(f"USE ROLE {role}")
-            except Exception as e:
-                st.error("Error selecting role: " + str(e))
-                return
+            st.write(f"### Role selected: {role}")
 
-            # Select database and schema
-            st.sidebar.header("Snowflake Databases")
-            try:
-                cursor.execute("SELECT name FROM INFORMATION_SCHEMA.DATABASES")
-                databases = [row[0] for row in cursor.fetchall()]
-                database = st.sidebar.selectbox("Select a database", databases)
-            except Exception as e:
-                st.error("Error fetching databases: " + str(e))
-                return
-
-            try:
-                cursor.execute("USE DATABASE " + database)
-            except Exception as e:
-                st.error("Error selecting database: " + str(e))
-                return
-
-            st.sidebar.header("Snowflake Schemas")
-            try:
-                cursor.execute("SHOW SCHEMAS")
-                schemas = [row[0] for row in cursor.fetchall()]
-                schema = st.sidebar.selectbox("Select a schema", schemas)
-            except Exception as e:
-                st.error("Error fetching schemas: " + str(e))
-                return
-
-            try:
-                cursor.execute("USE SCHEMA " + schema)
-            except Exception as e:
-                st.error("Error selecting schema: " + str(e))
-                return
-
-            # Show table information
-            try:
-                cursor.execute('SELECT * FROM information_schema.tables')
-                tables = cursor.fetchall()
-                st.write('### Tables in Snowflake:')
-                for table in tables:
-                    st.write('- ' + table.table_name)
-            except Exception as e:
-                st.error("Error fetching tables: " + str(e))
-
-            # Show user information
+            # User management
+            st.write('## User Management')
             try:
                 cursor.execute('SHOW USERS')
                 users = cursor.fetchall()
@@ -81,7 +58,20 @@ def main():
             except Exception as e:
                 st.error("Error fetching users: " + str(e))
 
-            # Show warehouse information
+            # Database management
+            st.write('## Database Management')
+            try:
+                cursor.execute("SELECT name FROM INFORMATION_SCHEMA.DATABASES")
+                databases = [row[0] for row in cursor.fetchall()]
+                database = st.selectbox("Select a database", databases)
+            except Exception as e:
+                st.error("Error fetching databases: " + str(e))
+                return
+
+            st.write(f"### Database selected: {database}")
+
+            # Warehouse management
+            st.write('## Warehouse Management')
             try:
                 cursor.execute('SHOW WAREHOUSES')
                 warehouses = cursor.fetchall()
@@ -90,5 +80,10 @@ def main():
                     st.write('- ' + warehouse[0])
             except Exception as e:
                 st.error("Error fetching warehouses: " + str(e))
+
         else:
             return
+
+
+if __name__ == "__main__":
+    main()
