@@ -1,14 +1,12 @@
 import streamlit as st
 import snowflake.connector as sf
 
-def connect_to_snowflake(user, password, account, warehouse, database, schema):
+def connect_to_snowflake(user, password, account, warehouse):
     conn = sf.connect(
         user=user,
         password=password,
         account=account,
         warehouse=warehouse,
-        database=database,
-        schema=schema
     )
 
     return conn.cursor()
@@ -22,12 +20,30 @@ def main():
     password = st.sidebar.text_input("Password", type="password")
     account = st.sidebar.text_input("Account")
     warehouse = st.sidebar.text_input("Warehouse")
-    database = st.sidebar.text_input("Database")
-    schema = st.sidebar.text_input("Schema")
 
-    # Connect to Snowflake and get data
+    # Connect to Snowflake
     if st.sidebar.button("Connect"):
-        cursor = connect_to_snowflake(user, password, account, warehouse, database, schema)
+        try:
+            cursor = connect_to_snowflake(user, password, account, warehouse)
+            st.success("Connected to Snowflake!")
+        except Exception as e:
+            st.error("Error connecting to Snowflake: " + str(e))
+            return
+
+        # Select database and schema
+        st.sidebar.header("Snowflake Databases")
+        cursor.execute("SHOW DATABASES")
+        databases = [row[0] for row in cursor.fetchall()]
+        database = st.sidebar.selectbox("Select a database", databases)
+
+        cursor.execute("USE DATABASE " + database)
+
+        st.sidebar.header("Snowflake Schemas")
+        cursor.execute("SHOW SCHEMAS")
+        schemas = [row[0] for row in cursor.fetchall()]
+        schema = st.sidebar.selectbox("Select a schema", schemas)
+
+        cursor.execute("USE SCHEMA " + schema)
 
         # Show table information
         cursor.execute('SELECT * FROM information_schema.tables')
