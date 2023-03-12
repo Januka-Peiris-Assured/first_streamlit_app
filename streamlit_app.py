@@ -3,13 +3,18 @@ database = ""
 schema = ""
 
 # Connect to Snowflake
-if st.sidebar.button("Connect"):
+def connect_to_snowflake(user, password, account, warehouse):
     try:
-        cursor = connect_to_snowflake(user, password, account, warehouse)
-        st.success("Connected to Snowflake!")
+        conn = sf.connect(
+            user=user,
+            password=password,
+            account=account,
+            warehouse=warehouse,
+        )
+        return conn.cursor()
     except Exception as e:
         st.error("Error connecting to Snowflake: " + str(e))
-        return
+        return None
 
     # Select database and schema
     cursor.execute("SHOW DATABASES")
