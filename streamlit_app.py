@@ -45,7 +45,7 @@ selected_table = st.selectbox("Table Name", tables)
 
 # Retrieve table columns and preview data
 def load_data():
-    cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
+    cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table}")
     data = cursor.fetchall()
     df = pd.DataFrame(data, columns=[desc[0] for desc in cursor.description])
     return df
@@ -55,8 +55,16 @@ if selected_table:
     df = load_data()
     st.write(f"Columns: {', '.join(df.columns)}")
     st.write("Data Preview:")
-    st.dataframe(df)
+    st.write(df)
 
-    
     st.write("Edit table")
-    edited_df = st.experimental_data_editor(df) # 👈 An editable dataframe
+    edited_df = st.experimental_data_editor(df, num_rows="dynamic") # 👈 An editable dataframe with dynamic row adding/deleting
+
+    if st.button("Save changes"):
+        # Save changes to Snowflake table
+        cursor.execute(f"DELETE FROM {selected_database}.{selected_schema}.{selected_table}") # Delete existing data
+        for index, row in edited_df.iterrows():
+            cursor.execute(f"INSERT INTO {selected_database}.{selected_schema}.{selected_table} VALUES ({','.join([str(val) for val in row.values])})") # Insert new data
+
+        conn.commit() # Commit changes to database
+        st.write("Changes saved!") # Notify user
