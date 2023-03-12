@@ -1,79 +1,43 @@
+import snowflake.connector
 import streamlit as st
-import snowflake.connector as sf
-import pandas as pd
 
+# Get Snowflake account details from user input
+account = st.text_input("Snowflake Account Name")
+user = st.text_input("User Name")
+password = st.text_input("Password", type="password")
 
 # Connect to Snowflake
-def connect_to_snowflake(user, password, account, warehouse):
-    try:
-        conn = sf.connect(
-            user=user,
-            password=password,
-            account=account,
-            warehouse=warehouse,
-        )
-        cursor = conn.cursor()
-        return cursor
-    except Exception as e:
-        st.error("Error connecting to Snowflake: " + str(e))
-        return None
+conn = snowflake.connector.connect(
+    account=account,
+    user=user,
+    password=password
+)
 
+# Retrieve list of virtual warehouses, databases, and schemas
+cursor = conn.cursor()
+cursor.execute("SHOW WAREHOUSES")
+warehouses = [row[1] for row in cursor.fetchall()]
 
-# Main function
-def main():
-    st.sidebar.title("Snowflake Admin Tool")
+cursor.execute("SHOW DATABASES")
+databases = [row[1] for row in cursor.fetchall()]
 
-    # Get Snowflake credentials from user
-    st.sidebar.header("Snowflake Credentials")
-    user = st.sidebar.text_input("User")
-    password = st.sidebar.text_input("Password", type="password")
-    account = st.sidebar.text_input("Account")
-    warehouse = st.sidebar.text_input("Warehouse")
+cursor.execute("SHOW SCHEMAS")
+schemas = [row[1] for row in cursor.fetchall()]
 
-    # Connect to Snowflake
-    if st.sidebar.button("Connect"):
-        cursor = connect_to_snowflake(user, password, account, warehouse)
-        if cursor:
-            st.success("Connected to Snowflake!")
+# Display options for virtual warehouse, database, schema, and table
+selected_warehouse = st.selectbox("Virtual Warehouse", warehouses)
+selected_database = st.selectbox("Database", databases)
+selected_schema = st.selectbox("Schema", schemas)
+selected_table = st.text_input("Table Name")
 
-            # Select role
-            st.sidebar.header("Snowflake Roles")
-            try:
-                cursor.execute(
-                    'SHOW ROLES'
-                )
-                roles = [row[0] for row in cursor.fetchall()]
-                role = st.sidebar.selectbox("Select a role", roles)
-                cursor.execute(f'USE ROLE "{role}"')
-            except Exception as e:
-                st.error("Error fetching or selecting role: " + str(e))
-                return
+# Retrieve table columns and preview data
+if selected_table:
+    cursor.execute(f"DESCRIBE TABLE {selected_table}")
+    columns = [row[0] for row in cursor.fetchall()]
 
-            st.write(f"### Role selected: {role}")
+    cursor.execute(f"SELECT * FROM {selected_table} LIMIT 10")
+    data = cursor.fetchall()
 
-            # User management
-            st.write('## User Management')
-            try:
-                cursor.execute('SHOW USERS')
-                users = cursor.fetchall()
-                df_users = pd.DataFrame(users, columns=['User', 'Created On', 'Default Namespace'])
-                st.dataframe(df_users, use_container_width=True)
-            except Exception as e:
-                st.error("Error fetching users: " + str(e))
-
-            # Warehouse management
-            st.write('## Warehouse Management')
-            try:
-                cursor.execute('SHOW WAREHOUSES')
-                warehouses = cursor.fetchall()
-                df_warehouses = pd.DataFrame(warehouses, columns=['Warehouse', 'State', 'Size', 'AutoSuspend', 'Created On', 'Retained For'])
-                st.dataframe(df_warehouses, use_container_width=True)
-            except Exception as e:
-                st.error("Error fetching warehouses: " + str(e))
-
-        else:
-            return
-
-
-if __name__ == "__main__":
-    main()
+    st.write(f"Columns: {', '.join(columns)}")
+    st.write("Data Preview:")
+    st.write(data)
