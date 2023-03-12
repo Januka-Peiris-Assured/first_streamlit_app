@@ -2,14 +2,14 @@ import snowflake.connector
 import streamlit as st
 import pandas as pd
 
-# Get Snowflake account details from user input
-account = st.text_input("Snowflake Account Name")
-user = st.text_input("User Name")
-password = st.text_input("Password", type="password")
+# Create sidebar
+with st.sidebar:
+    st.write("### Login Details")
+    account = st.text_input("Snowflake Account Name")
+    user = st.text_input("User Name")
+    password = st.text_input("Password", type="password")
 
 # Connect to Snowflake
-conn = None
-
 if st.button("Login"):
     conn = snowflake.connector.connect(
         account=account,
@@ -60,30 +60,31 @@ if st.button("Login"):
         st.write("Data Preview:")
         st.dataframe(df)
 
+
         st.write("Edit table")
         edited_df = st.experimental_data_editor(df, num_rows="dynamic") # 👈 An editable dataframe
 
         # Write back changes to Snowflake table
         # Save changes to Snowflake
-        if st.button("Save Changes"):
-            cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table}")
-            data = cursor.fetchall()
-            original_df = pd.DataFrame(data, columns=[desc[0] for desc in cursor.description])
-            edited_df = edited_df.astype(str)  # Convert all columns to str
+    if st.button("Save Changes"):
+        cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table}")
+        data = cursor.fetchall()
+        original_df = pd.DataFrame(data, columns=[desc[0] for desc in cursor.description])
+        edited_df = edited_df.astype(str)  # Convert all columns to str
 
-            # Update existing rows
-            for i, row in edited_df.iterrows():
-                original_row = original_df.iloc[i]
-                if not row.equals(original_row):
-                    set_values = ", ".join([f"{col} = '{row[col]}'" for col in row.index])
-                    where_clause = " AND ".join([f"{col} = '{original_row[col]}'" for col in row.index])
-                    update_query = f"UPDATE {selected_database}.{selected_schema}.{selected_table} SET {set_values} WHERE {where_clause}"
-                    cursor.execute(update_query)
+        # Update existing rows
+        for i, row in edited_df.iterrows():
+            original_row = original_df.iloc[i]
+            if not row.equals(original_row):
+                set_values = ", ".join([f"{col} = '{row[col]}'" for col in row.index])
+                where_clause = " AND ".join([f"{col} = '{original_row[col]}'" for col in row.index])
+                update_query = f"UPDATE {selected_database}.{selected_schema}.{selected_table} SET {set_values} WHERE {where_clause}"
+                cursor.execute(update_query)
 
-            # Add new rows
-            new_rows = edited_df.loc[edited_df["_st_state"].isin(["new", "new_row"]), :]
-            if not new_rows.empty:
-                new_rows.drop(columns=["_st_state"], inplace=True)
-                new_rows.to_sql(name=selected_table, con=conn, schema=selected_schema, index=False, if_exists="append")
+        # Add new rows
+        new_rows = edited_df.loc[edited_df["_st_state"].isin(["new", "new_row"]), :]
+        if not new_rows.empty:
+            new_rows.drop(columns=["_st_state"], inplace=True)
+            new_rows.to_sql(name=selected_table, con=conn, schema=selected_schema, index=False, if_exists="append")
 
-            st.write("Changes saved!")
+        st.write("Changes saved!")
