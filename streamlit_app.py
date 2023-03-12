@@ -2,19 +2,23 @@ import snowflake.connector
 import streamlit as st
 import pandas as pd
 
+# Get Snowflake account details from user input
+account = st.text_input("Snowflake Account Name")
+user = st.text_input("User Name")
+password = st.text_input("Password", type="password")
 
-def load_snowflake_data():
-    # Get Snowflake account details from user input
-    account = st.text_input("Snowflake Account Name")
-    user = st.text_input("User Name")
-    password = st.text_input("Password", type="password")
-
-    # Connect to Snowflake
+# Function to connect to Snowflake
+def connect_snowflake(account, user, password):
     conn = snowflake.connector.connect(
         account=account,
         user=user,
         password=password
     )
+    return conn
+
+# Connect to Snowflake when button is clicked
+if st.button("Login"):
+    conn = connect_snowflake(account, user, password)
 
     # Retrieve list of virtual warehouses, databases, and schemas
     cursor = conn.cursor()
@@ -60,7 +64,7 @@ def load_snowflake_data():
 
         st.write("Edit table")
         edited_df = st.experimental_data_editor(df, num_rows="dynamic") # 👈 An editable dataframe
-        
+
         # Write back changes to Snowflake table
         # Save changes to Snowflake
         if st.button("Save Changes"):
@@ -79,4 +83,9 @@ def load_snowflake_data():
                     cursor.execute(update_query)
 
             # Add new rows
-            new_rows = edited_df.loc[edited_df["_st_state"].isin(["new",
+            new_rows = edited_df.loc[edited_df["_st_state"].isin(["new", "new_row"]), :]
+            if not new_rows.empty:
+                new_rows.drop(columns=["_st_state"], inplace=True)
+                new_rows.to_sql(name=selected_table, con=conn, schema=selected_schema, index=False, if_exists="append")
+
+            st.write("Changes saved!")
