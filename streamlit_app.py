@@ -54,5 +54,5 @@ if selected_table:
     
     # Put the data into a streamlit dataframe and display it
     df = pd.DataFrame(data, columns=headers)
-    edited_df = st.experimental_data_editor(df)
-    st.write(edited_df)
+    df = load_data()
+    edited_df = st.experimental_data_editor(df) # 👈 An editable dataframe
