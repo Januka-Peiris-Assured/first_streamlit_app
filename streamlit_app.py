@@ -63,7 +63,7 @@ if selected_table:
 
     cursor.execute(f"SELECT * FROM {selected_database}.{selected_schema}.{selected_table} LIMIT 10")
     data = cursor.fetchall()
-    df = pd.DataFrame(data, columns=[desc[0] for desc in cursor.description])
+    df = st.DataFrame(data, columns=[desc[0] for desc in cursor.description])
 
     st.write(f"Columns: {', '.join(df.columns)}")
     st.write("Data Preview:")
